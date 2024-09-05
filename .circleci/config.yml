@@ -1,0 +1,76 @@
+version: 2.1
+
+executors:
+  ubuntu-executor:
+    docker:
+      - image: cimg/go:1.22
+    working_directory: ~/repo
+
+  macos-executor:
+    macos:
+      xcode: "13.4.1"
+    working_directory: ~/repo
+
+orbs:
+  go: circleci/go@1.11.0
+  aws-cli: circleci/aws-cli@5.1.0
+
+jobs:
+  build-ubuntu:
+    executor: ubuntu-executor
+    steps:
+      - checkout
+      - aws-cli/install
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y zip
+      - run:
+          name: Build binary
+          command: |
+            make build
+      - run:
+          name: Upload to S3
+          command: |
+            aws s3 cp output/bcrypt-tool s3://polarityio-prod-builds/bcrypt-tool/ubuntu/bcrypt-tool
+
+  build-macos-x64:
+    executor: macos-executor
+    steps:
+      - checkout
+      - go/install
+      - aws-cli/install
+      - run:
+          name: Build binary
+          command: |
+            go mod download golang.org/x/net
+            make build
+      - run:
+          name: Upload to S3
+          command: |
+            aws s3 cp output/bcrypt-tool s3://polarityio-prod-builds/bcrypt-tool/macos/x64/bcrypt-tool
+
+  build-macos-arm64:
+    executor: macos-executor
+    steps:
+      - checkout
+      - go/install
+      - aws-cli/install
+      - run:
+          name: Build binary
+          command: |
+            env GOARCH=arm64 go mod download golang.org/x/net
+            env GOARCH=arm64 make build
+      - run:
+          name: Upload to S3
+          command: |
+            aws s3 cp output/bcrypt-tool s3://polarityio-prod-builds/bcrypt-tool/macos/arm64/bcrypt-tool
+
+workflows:
+  version: 2
+  build-and-upload:
+    jobs: 
+      - build-ubuntu
+      - build-macos-x64
+      - build-macos-arm64
