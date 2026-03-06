@@ -8,7 +8,7 @@ executors:
 
   macos-executor:
     macos:
-      xcode: "13.4.1"
+      xcode: "15.4.0"
     working_directory: ~/repo
 
 orbs:
