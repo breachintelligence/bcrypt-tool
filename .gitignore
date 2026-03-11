@@ -5,3 +5,6 @@ bcrypt-tool
 output/
 dist/
 .DS_Store
+
+# Intellij 
+.idea
