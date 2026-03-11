@@ -3,12 +3,12 @@ version: 2.1
 executors:
   ubuntu-executor:
     docker:
-      - image: cimg/go:1.22
+      - image: cimg/go:1.24
     working_directory: ~/repo
 
   macos-executor:
     macos:
-      xcode: "13.4.1"
+      xcode: "15.4.0"
     working_directory: ~/repo
 
 orbs:
@@ -20,7 +20,6 @@ jobs:
     executor: ubuntu-executor
     steps:
       - checkout
-      - aws-cli/install
       - run:
           name: Install dependencies
           command: |
@@ -31,6 +30,21 @@ jobs:
           command: |
             make build
       - run:
+          name: Run tests
+          command: |
+            make test
+      - persist_to_workspace:
+          root: output
+          paths:
+            - bcrypt-tool
+
+  upload-ubuntu:
+    executor: ubuntu-executor
+    steps:
+      - aws-cli/install
+      - attach_workspace:
+          at: output
+      - run:
           name: Upload to S3
           command: |
             aws s3 cp output/bcrypt-tool s3://polarityio-prod-builds/bcrypt-tool/ubuntu/bcrypt-tool
@@ -39,13 +53,24 @@ jobs:
     executor: macos-executor
     steps:
       - checkout
-      - go/install
-      - aws-cli/install
+      - go/install:
+          version: "1.24.1"
       - run:
           name: Build binary
           command: |
             go mod download golang.org/x/net
             make build
+      - persist_to_workspace:
+          root: output
+          paths:
+            - bcrypt-tool
+
+  upload-macos-x64:
+    executor: macos-executor
+    steps:
+      - aws-cli/install
+      - attach_workspace:
+          at: output
       - run:
           name: Upload to S3
           command: |
@@ -55,13 +80,24 @@ jobs:
     executor: macos-executor
     steps:
       - checkout
-      - go/install
-      - aws-cli/install
+      - go/install:
+          version: "1.24.1"
       - run:
           name: Build binary
           command: |
             env GOARCH=arm64 go mod download golang.org/x/net
             env GOARCH=arm64 make build
+      - persist_to_workspace:
+          root: output
+          paths:
+            - bcrypt-tool
+
+  upload-macos-arm64:
+    executor: macos-executor
+    steps:
+      - aws-cli/install
+      - attach_workspace:
+          at: output
       - run:
           name: Upload to S3
           command: |
@@ -74,3 +110,21 @@ workflows:
       - build-ubuntu
       - build-macos-x64
       - build-macos-arm64
+      - upload-ubuntu:
+          requires:
+            - build-ubuntu
+          filters:
+            branches:
+              only: main
+      - upload-macos-x64:
+          requires:
+            - build-macos-x64
+          filters:
+            branches:
+              only: main
+      - upload-macos-arm64:
+          requires:
+            - build-macos-arm64
+          filters:
+            branches:
+              only: main
