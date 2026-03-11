@@ -11,22 +11,33 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// version and cryptoVersion are set at build time via -ldflags
+var version = "dev"
+var cryptoVersion = "unknown"
+
 const (
 	helpText = `Usage: bcrypt-tool [action] argument ...
   ACTIONS
-    hash  [password] <cost> Generate hash given password and optional cost (4-31)
-    match [password] [hash] Print "yes" and return 0 if password is a match
-                            for hash, or print "no" and return 1 otherwise 
-    cost  [hash]            Print the cost of hash (4-31)`
+    hash    [password] <cost> Generate hash given password and optional cost (4-31)
+    match   [password] [hash] Print "yes" and return 0 if password is a match
+                              for hash, or print "no" and return 1 otherwise 
+    cost    [hash]            Print the cost of hash (4-31)
+    version                   Print the version of bcrypt-tool`
 )
 
 func main() {
 	os.Args = os.Args[1:]
 
-	if len(os.Args) < 2 {
+	if len(os.Args) < 1 {
+		help()
+	}
+	if len(os.Args) == 1 && os.Args[0] != "version" && os.Args[0] != "-v" && os.Args[0] != "--version" {
 		help()
 	}
 	switch os.Args[0] {
+	case "version", "-v", "--version":
+		fmt.Printf("bcrypt-tool %s (golang.org/x/crypto %s)\n", version, cryptoVersion)
+		return
 	case "cost":
 		if len(os.Args) != 2 {
 			help()
