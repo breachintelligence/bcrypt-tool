@@ -29,6 +29,10 @@ jobs:
           name: Build binary
           command: |
             make build
+      - run:
+          name: Run tests
+          command: |
+            make test
       - persist_to_workspace:
           root: output
           paths:
