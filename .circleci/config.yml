@@ -54,7 +54,7 @@ jobs:
     steps:
       - checkout
       - go/install:
-          version: "1.26.8"
+          version: "1.26.9"
       - run:
           name: Build binary
           command: |
@@ -81,7 +81,7 @@ jobs:
     steps:
       - checkout
       - go/install:
-          version: "1.26.8"
+          version: "1.26.9"
       - run:
           name: Build binary
           command: |
